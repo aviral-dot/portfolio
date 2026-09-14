@@ -2,412 +2,886 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 st.set_page_config(
-    page_title="Aviral Bagjani | AI & GenAI Engineer",
+    page_title="AVIRAL // NEURAL CORE OS",
     page_icon="⚡",
     layout="wide",
+    initial_sidebar_state="collapsed",
 )
 
-# Kill Streamlit chrome so the portfolio owns the whole screen
+# Strip default Streamlit margins and containers
 st.markdown("""
 <style>
-    header[data-testid="stHeader"] { display: none !important; }
-    #MainMenu { display: none !important; }
-    footer { display: none !important; }
+    header[data-testid="stHeader"], footer, #MainMenu { display: none !important; }
     .block-container { padding: 0 !important; margin: 0 !important; max-width: 100vw !important; }
+    iframe { border: none !important; width: 100vw !important; height: 100vh !important; }
 </style>
 """, unsafe_allow_html=True)
 
-PORTFOLIO = r"""
+CYBER_DECK_HTML = r"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aviral Bagjani — AI & GenAI Engineer</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<title>Aviral Bagjani — Autonomous Systems Deck</title>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{background:#05060a;color:#e5e7eb;font-family:'Space Grotesk',sans-serif;overflow-x:hidden}
-::selection{background:#6366f1;color:#fff}
-#bg3d{position:fixed;inset:0;z-index:0;pointer-events:none}
-#frame{position:relative;z-index:1;height:100vh;overflow-y:scroll;scrollbar-width:none}
-#frame::-webkit-scrollbar{display:none}
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+body {
+    background-color: #020408;
+    color: #e2e8f0;
+    font-family: 'Chakra Petch', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+}
 
-/* ---------- PRELOADER ---------- */
-#loader{position:fixed;inset:0;z-index:99;background:#05060a;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:18px;transition:opacity .7s ease,visibility .7s}
-#loader.hide{opacity:0;visibility:hidden}
-.loader-name{font-family:'JetBrains Mono',monospace;font-size:1rem;letter-spacing:.4em;color:#818cf8;
-  overflow:hidden;white-space:nowrap;width:0;animation:type 1.4s steps(22) forwards}
-@keyframes type{to{width:340px}}
-.loader-bar{width:220px;height:2px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
-.loader-bar i{display:block;height:100%;width:40%;background:linear-gradient(90deg,#6366f1,#38bdf8);
-  animation:slide 1.2s ease-in-out infinite}
-@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+/* Background canvas */
+#canvas-3d {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+}
 
-/* ---------- CURSOR ---------- */
-#cursor{position:fixed;width:34px;height:34px;border:1.5px solid rgba(129,140,248,.7);border-radius:50%;
-  pointer-events:none;z-index:98;transform:translate(-50%,-50%);transition:width .25s,height .25s,background .25s,mix-blend-mode .25s;mix-blend-mode:difference}
-#cursor.hot{width:58px;height:58px;background:rgba(129,140,248,.15)}
+/* Scanline and Vignette overlays */
+.crt-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    background: radial-gradient(circle at center, transparent 60%, rgba(0, 0, 0, 0.75) 100%),
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+    background-size: 100% 100%, 100% 4px;
+}
 
-/* ---------- NAV ---------- */
-nav{position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;
-  padding:20px 6vw;backdrop-filter:blur(14px);background:rgba(5,6,10,.55);border-bottom:1px solid rgba(255,255,255,.06)}
-.logo{font-family:'JetBrains Mono',monospace;font-weight:700;color:#a5b4fc;font-size:1rem;letter-spacing:-.02em}
-.logo span{color:#38bdf8}
-.nav-links a{color:#94a3b8;text-decoration:none;margin-left:26px;font-size:.88rem;transition:.2s}
-.nav-links a:hover{color:#fff}
-.nav-links a b{color:#6366f1;font-family:'JetBrains Mono',monospace;font-weight:500;margin-right:4px}
+/* HUD Frame */
+.hud-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px 32px;
+    pointer-events: none;
+}
+.hud-layer * { pointer-events: auto; }
 
-/* ---------- HERO ---------- */
-.hero{min-height:88vh;display:flex;flex-direction:column;justify-content:center;padding:0 6vw}
-.pill{display:inline-flex;align-items:center;gap:9px;padding:7px 16px;border-radius:99px;font-size:.78rem;
-  font-family:'JetBrains Mono',monospace;color:#93c5fd;background:rgba(59,130,246,.08);
-  border:1px solid rgba(59,130,246,.28);width:fit-content;margin-bottom:26px}
-.pill .dot{width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 10px #34d399;animation:pulse 1.8s infinite}
-@keyframes pulse{50%{opacity:.3}}
-.hero h1{font-size:clamp(2.6rem,7vw,5rem);font-weight:700;line-height:1.05;letter-spacing:-.04em;margin-bottom:14px}
-.hero h1 .grad{background:linear-gradient(120deg,#818cf8 0%,#38bdf8 50%,#a78bfa 100%);
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.typer{font-family:'JetBrains Mono',monospace;font-size:clamp(1rem,2.4vw,1.4rem);color:#38bdf8;
-  min-height:1.6em;margin-bottom:20px}
-.typer::after{content:'▍';animation:blink 1s infinite}
-@keyframes blink{50%{opacity:0}}
-.hero p.desc{max-width:640px;color:#9ca3af;line-height:1.7;font-size:1.02rem;margin-bottom:34px}
-.hero p.desc b{color:#e5e7eb}
-.btn-row{display:flex;gap:14px;flex-wrap:wrap}
-.btn{padding:13px 26px;border-radius:12px;text-decoration:none;font-weight:600;font-size:.9rem;transition:.25s;cursor:pointer;border:none}
-.btn-solid{background:linear-gradient(120deg,#6366f1,#38bdf8);color:#fff;box-shadow:0 8px 24px -8px rgba(99,102,241,.6)}
-.btn-solid:hover{transform:translateY(-3px);box-shadow:0 14px 32px -8px rgba(99,102,241,.8)}
-.btn-ghost{border:1px solid rgba(255,255,255,.18);color:#e5e7eb;background:transparent}
-.btn-ghost:hover{border-color:#818cf8;color:#a5b4fc;transform:translateY(-3px)}
-.scroll-hint{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);color:#4b5563;
-  font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.25em;animation:bob 2s infinite}
-@keyframes bob{50%{transform:translate(-50%,8px)}}
+/* Top Telemetry Bar */
+.telemetry-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(10, 15, 29, 0.75);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 12px;
+    padding: 12px 24px;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 0 30px rgba(56, 189, 248, 0.08);
+}
+.hud-identity {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.hud-pulse {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #38bdf8;
+    box-shadow: 0 0 12px #38bdf8;
+    animation: pulse 1.6s infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 0.3; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.15); } }
 
-/* ---------- SECTIONS ---------- */
-section{padding:90px 6vw;max-width:1150px;margin:0 auto}
-.sec-tag{font-family:'JetBrains Mono',monospace;color:#6366f1;font-size:.8rem;letter-spacing:.2em;margin-bottom:10px}
-.sec-title{font-size:clamp(1.7rem,3.6vw,2.4rem);letter-spacing:-.03em;margin-bottom:44px}
-.sec-title em{font-style:normal;color:#38bdf8}
+.hud-name {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #ffffff;
+    font-family: 'JetBrains Mono', monospace;
+}
+.hud-name span { color: #38bdf8; }
+.telemetry-metrics {
+    display: flex;
+    gap: 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+.telemetry-item b { color: #38bdf8; font-weight: 600; }
 
-/* stats */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:20px}
-.stat{background:rgba(17,24,39,.55);border:1px solid rgba(255,255,255,.07);border-radius:16px;
-  padding:26px 20px;text-align:center;backdrop-filter:blur(10px);transition:.3s}
-.stat:hover{transform:translateY(-5px);border-color:rgba(99,102,241,.45)}
-.stat .n{font-family:'JetBrains Mono',monospace;font-size:2rem;font-weight:700;
-  background:linear-gradient(120deg,#a5b4fc,#38bdf8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.stat .l{font-size:.76rem;color:#9ca3af;margin-top:6px;letter-spacing:.04em}
+.audio-toggle {
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #38bdf8;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.audio-toggle:hover { background: rgba(56, 189, 248, 0.2); }
 
-/* cards / projects */
-.card{background:rgba(17,24,39,.6);border:1px solid rgba(255,255,255,.08);border-radius:20px;
-  padding:34px;margin-bottom:24px;backdrop-filter:blur(12px);
-  transform-style:preserve-3d;transition:border-color .3s,box-shadow .3s}
-.card:hover{border-color:rgba(99,102,241,.5);box-shadow:0 24px 50px -20px rgba(99,102,241,.35)}
-.card h3{font-size:1.25rem;margin-bottom:4px}
-.card .role{color:#818cf8;font-size:.9rem;font-weight:600;margin-bottom:12px}
-.card p{color:#9ca3af;line-height:1.7;font-size:.95rem}
-.card p b{color:#e5e7eb}
-.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
-.tag{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:#cbd5e1;
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);padding:5px 11px;border-radius:7px}
-.tag.hi{color:#67e8f9;border-color:rgba(6,182,212,.35);background:rgba(6,182,212,.08)}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:22px}
-@media(max-width:780px){.two{grid-template-columns:1fr}}
+/* Main Stage / Center Layout */
+.main-stage {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+    padding: 20px 0;
+}
 
-/* skill bars */
-.skill{margin-bottom:20px}
-.skill .row{display:flex;justify-content:space-between;font-size:.86rem;margin-bottom:8px}
-.skill .row span:last-child{font-family:'JetBrains Mono',monospace;color:#818cf8}
-.track{height:6px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden}
-.fill{height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,#6366f1,#38bdf8);
-  transition:width 1.4s cubic-bezier(.2,.7,.2,1)}
-.fill.gold{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
-.fill.pink{background:linear-gradient(90deg,#ec4899,#a78bfa)}
+/* Left Node Directory */
+.node-selector {
+    width: 290px;
+    background: rgba(8, 12, 22, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.node-selector-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+.node-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 12px 14px;
+    border-radius: 10px;
+    color: #cbd5e1;
+    cursor: pointer;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.25s ease;
+}
+.node-btn:hover, .node-btn.active {
+    background: rgba(56, 189, 248, 0.12);
+    border-color: #38bdf8;
+    color: #ffffff;
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+    transform: translateX(4px);
+}
+.node-btn span.tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+}
 
-/* timeline */
-.tl{position:relative;padding-left:34px}
-.tl::before{content:'';position:absolute;left:8px;top:6px;bottom:6px;width:2px;
-  background:linear-gradient(180deg,#6366f1,#38bdf8,transparent)}
-.tl-item{position:relative;margin-bottom:34px}
-.tl-item::before{content:'';position:absolute;left:-33px;top:6px;width:14px;height:14px;border-radius:50%;
-  background:#05060a;border:2px solid #6366f1;box-shadow:0 0 12px rgba(99,102,241,.7)}
-.tl-item .when{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:#a78bfa;margin-bottom:4px}
+/* Center Interactive Instruction Hint */
+.center-nav-hint {
+    position: absolute;
+    bottom: 110px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #64748b;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    pointer-events: none;
+    animation: float 2.5s ease-in-out infinite;
+}
+@keyframes float { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -6px); } }
 
-/* achievements */
-.ach{display:flex;align-items:center;gap:18px;background:rgba(17,24,39,.55);
-  border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:22px 26px;margin-bottom:16px;transition:.3s}
-.ach:hover{transform:translateX(8px);border-color:rgba(251,191,36,.4)}
-.ach .ico{font-size:1.6rem}
+/* Right Holographic Info Screen */
+.hologram-screen {
+    width: 440px;
+    max-height: 75vh;
+    overflow-y: auto;
+    background: linear-gradient(135deg, rgba(10, 16, 32, 0.85) 0%, rgba(5, 8, 16, 0.95) 100%);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    box-shadow: 0 0 40px rgba(56, 189, 248, 0.12);
+    backdrop-filter: blur(20px);
+    border-radius: 18px;
+    padding: 28px;
+    scrollbar-width: thin;
+    scrollbar-color: #38bdf8 transparent;
+}
+.screen-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+}
+.screen-sys-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: #38bdf8;
+    letter-spacing: 0.1em;
+}
+.screen-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.15;
+    margin-bottom: 8px;
+}
+.screen-subtitle {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin-bottom: 18px;
+}
+.stat-pill-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+}
+.stat-pill {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 10px 14px;
+}
+.stat-pill .val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #38bdf8;
+}
+.stat-pill .lbl {
+    font-size: 0.7rem;
+    color: #64748b;
+    text-transform: uppercase;
+}
+.screen-body {
+    font-size: 0.9rem;
+    color: #cbd5e1;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+.screen-body ul {
+    margin-left: 18px;
+    margin-top: 8px;
+}
+.screen-body li {
+    margin-bottom: 6px;
+}
+.tech-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 22px;
+}
+.chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    color: #7dd3fc;
+}
 
-/* contact */
-#contact{text-align:center;padding-bottom:120px}
-#contact .big{font-size:clamp(1.8rem,4.5vw,3rem);letter-spacing:-.03em;margin-bottom:18px}
-#contact .big .grad{background:linear-gradient(120deg,#818cf8,#38bdf8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.socials{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:30px}
-.socials a{padding:12px 22px;border-radius:12px;border:1px solid rgba(255,255,255,.15);color:#e5e7eb;
-  text-decoration:none;font-size:.88rem;transition:.25s}
-.socials a:hover{border-color:#6366f1;color:#a5b4fc;transform:translateY(-3px)}
+/* Interactive Simulator Box */
+.sim-box {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px dashed rgba(56, 189, 248, 0.35);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 18px;
+}
+.sim-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: #38bdf8;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+}
+.sim-trigger {
+    width: 100%;
+    background: linear-gradient(135deg, #0284c7 0%, #6366f1 100%);
+    border: none;
+    color: #ffffff;
+    padding: 10px;
+    border-radius: 8px;
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.sim-trigger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(2, 132, 199, 0.6);
+}
+.sim-output {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: #a5f3fc;
+    background: #050811;
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: 10px;
+    display: none;
+    line-height: 1.5;
+}
 
-/* reveal */
-.rv{opacity:0;transform:translateY(36px);transition:opacity .8s ease,transform .8s ease}
-.rv.in{opacity:1;transform:translateY(0)}
+/* Bottom Action Bar */
+.bottom-dock {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(10, 15, 29, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px 24px;
+    backdrop-filter: blur(14px);
+}
+.dock-links {
+    display: flex;
+    gap: 14px;
+}
+.dock-btn {
+    text-decoration: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: #e2e8f0;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.03);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.dock-btn:hover {
+    border-color: #38bdf8;
+    color: #38bdf8;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+}
+.dock-btn.primary {
+    background: #0284c7;
+    border-color: #38bdf8;
+    color: #ffffff;
+}
+.dock-btn.primary:hover {
+    background: #0369a1;
+}
 
-footer{padding:26px 6vw;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;
-  font-size:.78rem;color:#4b5563;font-family:'JetBrains Mono',monospace}
+@media (max-width: 900px) {
+    .node-selector { display: none; }
+    .hologram-screen { width: 100%; max-height: 60vh; }
+    .telemetry-metrics { display: none; }
+}
 </style>
 </head>
 <body>
 
-<div id="bg3d"></div>
-<div id="cursor"></div>
+<div id="canvas-3d"></div>
+<div class="crt-overlay"></div>
 
-<div id="loader">
-  <div class="loader-name">AVIRAL&nbsp;BAGJANI&nbsp;//&nbsp;AI&nbsp;ENGINEER</div>
-  <div class="loader-bar"><i></i></div>
-</div>
-
-<div id="frame">
-<nav>
-  <div class="logo">aviral<span>.</span>ai</div>
-  <div class="nav-links">
-    <a href="#work"><b>01.</b>Projects</a>
-    <a href="#skills"><b>02.</b>Stack</a>
-    <a href="#exp"><b>03.</b>Experience</a>
-    <a href="#contact"><b>04.</b>Contact</a>
-  </div>
-</nav>
-
-<!-- HERO -->
-<div class="hero">
-  <div class="pill"><span class="dot"></span>Open to AI / GenAI Engineering roles · 2026</div>
-  <h1>Hi, I'm <span class="grad">Aviral Bagjani</span>.<br>I build AI systems that <span class="grad">ship to production.</span></h1>
-  <div class="typer" id="typer"></div>
-  <p class="desc">Final-year <b>B.Tech (ECE), IIIT Bhagalpur</b>. I engineer <b>multi-agent orchestration</b> with LangGraph &amp; MCP,
-  <b>low-latency agentic RAG</b> on Qdrant + Redis, and wrap everything in <b>evaluation-driven guardrails</b> — DeepEval &amp; NeMo.
-  Former AI Engineering Intern at <b>Zeepty</b>. LeetCode <b>Knight (1784)</b>.</p>
-  <div class="btn-row">
-    <a class="btn btn-solid" href="https://github.com/aviral-dot" target="_blank" rel="noopener">View My Code →</a>
-    <a class="btn btn-ghost" href="https://www.linkedin.com/in/aviral-bagjani-a02049259/" target="_blank" rel="noopener">Connect on LinkedIn</a>
-  </div>
-  <div class="scroll-hint">SCROLL ↓</div>
-</div>
-
-<!-- STATS -->
-<section>
-  <div class="stats rv">
-    <div class="stat"><div class="n" data-count="1784">0</div><div class="l">LeetCode Knight · 500+ solved</div></div>
-    <div class="stat"><div class="n" data-count="2.12" data-dec="2">0</div><div class="l">End-to-end RAG latency (s)</div></div>
-    <div class="stat"><div class="n" data-count="70">0</div><div class="l">LLM inference cost cut (%)</div></div>
-    <div class="stat"><div class="n" data-count="95" data-suffix="%">0</div><div class="l">Adversarial queries blocked</div></div>
-  </div>
-</section>
-
-<!-- PROJECTS -->
-<section id="work">
-  <div class="sec-tag rv">// 01 — FLAGSHIP SYSTEMS</div>
-  <h2 class="sec-title rv">Things I've <em>built & deployed.</em></h2>
-
-  <div class="card rv tilt">
-    <h3>AgentFlow — Planner-Executor Multi-Agent Platform</h3>
-    <div class="role">LangGraph · MCP · FastAPI · NeMo · DeepEval</div>
-    <p>Orchestrated <b>3 autonomous workflows</b> (research, blog generation, email) with human-in-the-loop approval.
-    Wired <b>2 external tool ecosystems (Tavily + Gmail) through MCP</b>, completing <b>20/20 end-to-end runs</b> with zero state corruption.
-    Hardened with 2-stage NeMo guardrails, JWT auth &amp; LangSmith observability — cutting <b>15 minutes of research-to-draft to under 2 minutes</b>.</p>
-    <div class="tags">
-      <span class="tag hi">LangGraph</span><span class="tag hi">MCP</span><span class="tag">FastAPI</span>
-      <span class="tag">PostgreSQL</span><span class="tag">NeMo Guardrails</span><span class="tag">Groq</span>
-      <span class="tag">LiteLLM</span><span class="tag">DeepEval</span><span class="tag">Streamlit</span>
+<div class="hud-layer">
+    <!-- Top Telemetry -->
+    <div class="telemetry-bar">
+        <div class="hud-identity">
+            <div class="hud-pulse"></div>
+            <div class="hud-name">AVIRAL BAGJANI <span>// ARCHITECT</span></div>
+        </div>
+        <div class="telemetry-metrics">
+            <div class="telemetry-item">LEETCODE: <b>KNIGHT (1784)</b></div>
+            <div class="telemetry-item">RAG LATENCY: <b>2.12s</b></div>
+            <div class="telemetry-item">EVAL GATE: <b>DEEPEVAL &ge;80%</b></div>
+            <div class="telemetry-item">INSTITUTE: <b>IIIT BHAGALPUR</b></div>
+        </div>
+        <button class="audio-toggle" id="audio-toggle">AUDIO: PROCEDURAL [OFF]</button>
     </div>
-  </div>
 
-  <div class="card rv tilt">
-    <h3>RAGFury — Production Agentic RAG at 2.12s</h3>
-    <div class="role">Qdrant · Redis single-flight · LangSmith · Groq</div>
-    <p>Deployed a production-grade Agentic RAG with <b>hybrid retrieval &amp; citation-grounded generation</b> over a
-    <b>600-document Qdrant index</b> at <b>2.12s</b> end-to-end latency. Built <b>Redis single-flight distributed locking</b> +
-    user-scoped caching: <b>2.8s → 0.8s</b> on repeated queries and <b>70% lower inference cost</b>.
-    Enforced <b>4-component DeepEval gates</b> (78–92% scores) with NeMo blocking <b>&gt;95% adversarial queries</b>.</p>
-    <div class="tags">
-      <span class="tag hi">Qdrant Cloud</span><span class="tag hi">Redis Locking</span><span class="tag">LangChain</span>
-      <span class="tag">LangGraph</span><span class="tag">LangSmith</span><span class="tag">PostgreSQL</span>
-      <span class="tag">NeMo Guardrails</span><span class="tag">FastAPI</span>
+    <!-- Center Stage -->
+    <div class="main-stage">
+        <!-- Node Directory -->
+        <div class="node-selector">
+            <div class="node-selector-title">NEURAL COGNITIVE NODES</div>
+            <button class="node-btn active" onclick="selectNode('agentflow')">
+                <span>01. AGENTFLOW</span>
+                <span class="tag">LANGGRAPH</span>
+            </button>
+            <button class="node-btn" onclick="selectNode('ragfury')">
+                <span>02. RAGFURY</span>
+                <span class="tag">QDRANT/REDIS</span>
+            </button>
+            <button class="node-btn" onclick="selectNode('zeepty')">
+                <span>03. ZEEPTY EXP</span>
+                <span class="tag">INTERNSHIP</span>
+            </button>
+            <button class="node-btn" onclick="selectNode('stack')">
+                <span>04. CORE STACK</span>
+                <span class="tag">EVALS/GENAI</span>
+            </button>
+            <button class="node-btn" onclick="selectNode('bio')">
+                <span>05. PROFILE/EDU</span>
+                <span class="tag">IIIT/ACADEMICS</span>
+            </button>
+        </div>
+
+        <div class="center-nav-hint">&larr; ROTATE 3D CONSTELLATION WITH MOUSE &rarr;</div>
+
+        <!-- Hologram Information Panel -->
+        <div class="hologram-screen" id="hologram-panel">
+            <!-- Dynamic Content Injected Here -->
+        </div>
     </div>
-  </div>
-</section>
 
-<!-- SKILLS -->
-<section id="skills">
-  <div class="sec-tag rv">// 02 — TECHNICAL STACK</div>
-  <h2 class="sec-title rv">What I <em>work with.</em></h2>
-  <div class="two">
-    <div class="card rv">
-      <h3>AI / GenAI Core</h3>
-      <div class="skill"><div class="row"><span>LangGraph · LangChain · CrewAI</span><span>95%</span></div><div class="track"><div class="fill" data-w="95"></div></div></div>
-      <div class="skill"><div class="row"><span>RAG · Vector DBs (Qdrant, Neo4j)</span><span>92%</span></div><div class="track"><div class="fill gold" data-w="92"></div></div></div>
-      <div class="skill"><div class="row"><span>MCP · Fine-tuning · LLM APIs</span><span>90%</span></div><div class="track"><div class="fill pink" data-w="90"></div></div></div>
-      <div class="skill"><div class="row"><span>DeepEval · NeMo · LangSmith</span><span>88%</span></div><div class="track"><div class="fill" data-w="88"></div></div></div>
+    <!-- Bottom Dock -->
+    <div class="bottom-dock">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:#64748b;">
+            STATUS: READY TO DEPLOY FOR ENTERPRISE AI / GENAI ROLES
+        </div>
+        <div class="dock-links">
+            <a href="https://github.com/aviral-dot" target="_blank" class="dock-btn primary">
+                <span>💻 GITHUB (aviral-dot)</span>
+            </a>
+            <a href="https://www.linkedin.com/in/aviral-bagjani-a02049259/" target="_blank" class="dock-btn">
+                <span>💼 LINKEDIN PROFILE</span>
+            </a>
+            <a href="mailto:aviralbharti832002@gmail.com" class="dock-btn">
+                <span>✉️ TRANSMIT EMAIL</span>
+            </a>
+        </div>
     </div>
-    <div class="card rv">
-      <h3>Engineering &amp; Infra</h3>
-      <div class="skill"><div class="row"><span>Python · C++ · SQL</span><span>93%</span></div><div class="track"><div class="fill" data-w="93"></div></div></div>
-      <div class="skill"><div class="row"><span>FastAPI · PostgreSQL · Redis</span><span>90%</span></div><div class="track"><div class="fill gold" data-w="90"></div></div></div>
-      <div class="skill"><div class="row"><span>Docker · Kubernetes · AWS</span><span>80%</span></div><div class="track"><div class="fill pink" data-w="80"></div></div></div>
-      <div class="skill"><div class="row"><span>Git · GitHub Actions · Vercel</span><span>85%</span></div><div class="track"><div class="fill" data-w="85"></div></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- EXPERIENCE -->
-<section id="exp">
-  <div class="sec-tag rv">// 03 — JOURNEY</div>
-  <h2 class="sec-title rv">Experience &amp; <em>education.</em></h2>
-  <div class="tl">
-    <div class="tl-item rv">
-      <div class="when">APR 2025 — JUL 2025</div>
-      <div class="card">
-        <h3>AI Engineering Intern @ Zeepty</h3>
-        <p>• Applied <b>semantic creator/product matching</b> and personalized LLM outreach across <b>500+ combinations</b>, improving relevant-match retrieval by <b>25%</b>.<br>
-        • Refined prompts and retrieved context for creator outreach, lifting response relevance by <b>15%</b> across 20+ scenarios.</p>
-        <div class="tags"><span class="tag hi">Semantic Search</span><span class="tag">Prompt Engineering</span><span class="tag">LLM Outreach</span></div>
-      </div>
-    </div>
-    <div class="tl-item rv">
-      <div class="when">NOV 2022 — MAY 2026</div>
-      <div class="card">
-        <h3>B.Tech, Electronics &amp; Communication — IIIT Bhagalpur</h3>
-        <p>CGPA <b>6.95</b> (till 8th semester). Coursework: DSA, DBMS, Operating Systems, Machine Learning, Computer Networks.</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="sec-tag rv" style="margin-top:50px">// ACHIEVEMENTS</div>
-  <div class="ach rv"><div class="ico">⚔️</div><div><b>LeetCode Knight</b> — Rating 1784, 500+ problems solved.</div></div>
-  <div class="ach rv"><div class="ico">🎯</div><div><b>JEE Main 2022</b> — AIR 52,750 (95.44 percentile) among 1.2M+ candidates.</div></div>
-</section>
-
-<!-- CONTACT -->
-<section id="contact">
-  <div class="sec-tag rv">// 04 — GET IN TOUCH</div>
-  <h2 class="big rv">Let's build something<br><span class="grad">intelligent together.</span></h2>
-  <p class="desc rv" style="margin:0 auto;text-align:center">Hiring for AI / GenAI / LLM engineering roles?
-  My inbox is open — let's talk.</p>
-  <div class="socials rv">
-    <a href="mailto:aviralbharti832002@gmail.com">✉️ aviralbharti832002@gmail.com</a>
-    <a href="https://www.linkedin.com/in/aviral-bagjani-a02049259/" target="_blank" rel="noopener">💼 LinkedIn</a>
-    <a href="https://github.com/aviral-dot" target="_blank" rel="noopener">💻 GitHub — aviral-dot</a>
-  </div>
-</section>
-
-<footer>
-  <div>© 2026 AVIRAL BAGJANI</div>
-  <div>BUILT WITH STREAMLIT + THREE.JS</div>
-</footer>
 </div>
 
 <script>
-/* ---------- THREE.JS BACKGROUND ---------- */
-const bg=document.getElementById('bg3d');
-const scene=new THREE.Scene();
-const cam=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,100);cam.position.z=6;
-const ren=new THREE.WebGLRenderer({antialias:true,alpha:true});
-ren.setSize(innerWidth,innerHeight);ren.setPixelRatio(Math.min(devicePixelRatio,2));bg.appendChild(ren.domElement);
+/* ========================================================
+   WEB AUDIO API PROCEDURAL SYNTHESIZER
+   ======================================================== */
+let audioCtx = null;
+let soundEnabled = false;
 
-/* particle galaxy */
-const N=900,pos=new Float32Array(N*3),col=new Float32Array(N*3);
-const c1=new THREE.Color('#6366f1'),c2=new THREE.Color('#38bdf8'),c3=new THREE.Color('#a78bfa');
-for(let i=0;i<N;i++){
-  pos[i*3]=(Math.random()-.5)*26;pos[i*3+1]=(Math.random()-.5)*16;pos[i*3+2]=(Math.random()-.5)*14-2;
-  const c=[c1,c2,c3][i%3];col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b;
-}
-const pg=new THREE.BufferGeometry();
-pg.setAttribute('position',new THREE.BufferAttribute(pos,3));
-pg.setAttribute('color',new THREE.BufferAttribute(col,3));
-const stars=new THREE.Points(pg,new THREE.PointsMaterial({size:.045,vertexColors:true,transparent:true,opacity:.85}));
-scene.add(stars);
-
-/* floating wireframe shapes */
-const shapes=[];
-const geos=[new THREE.IcosahedronGeometry(1.1,0),new THREE.TorusGeometry(.8,.28,16,40),new THREE.OctahedronGeometry(1,0)];
-const mats=[0x6366f1,0x38bdf8,0xa78bfa];
-geos.forEach((g,i)=>{
-  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:mats[i],wireframe:true,transparent:true,opacity:.16}));
-  m.position.set(-5+i*5,(i-1)*2.2,-3);shapes.push(m);scene.add(m);
+document.getElementById('audio-toggle').addEventListener('click', () => {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    soundEnabled = !soundEnabled;
+    const btn = document.getElementById('audio-toggle');
+    if (soundEnabled) {
+        btn.textContent = "AUDIO: PROCEDURAL [ON]";
+        btn.style.borderColor = "#38bdf8";
+        btn.style.boxShadow = "0 0 15px rgba(56, 189, 248, 0.4)";
+        playTone(660, 0.08, 'sine');
+    } else {
+        btn.textContent = "AUDIO: PROCEDURAL [OFF]";
+        btn.style.borderColor = "";
+        btn.style.boxShadow = "";
+    }
 });
 
-let mx=0,my=0,tx=0,ty=0;
-addEventListener('mousemove',e=>{mx=(e.clientX/innerWidth-.5)*2;my=(e.clientY/innerHeight-.5)*2;
-  cur.style.left=e.clientX+'px';cur.style.top=e.clientY+'px';});
-
-function tick(){
-  requestAnimationFrame(tick);
-  tx+=(mx-tx)*.04;ty+=(my-ty)*.04;
-  stars.rotation.y+=.0006;stars.rotation.x=ty*.05;
-  shapes.forEach((s,i)=>{s.rotation.x+=.003+i*.001;s.rotation.y+=.004-i*.0008;
-    s.position.y+=Math.sin(Date.now()*.001+i)*.0012;});
-  cam.position.x=tx*.9;cam.position.y=-ty*.5;cam.lookAt(0,0,0);
-  ren.render(scene,cam);
+function playTone(freq = 440, duration = 0.05, type = 'sine') {
+    if (!soundEnabled || !audioCtx) return;
+    try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    } catch(e){}
 }
-tick();
-addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight);});
 
-/* ---------- CUSTOM CURSOR ---------- */
-const cur=document.getElementById('cursor');
-document.querySelectorAll('a,.btn,.card').forEach(el=>{
-  el.addEventListener('mouseenter',()=>cur.classList.add('hot'));
-  el.addEventListener('mouseleave',()=>cur.classList.remove('hot'));
-});
+/* ========================================================
+   NEURAL NODE DATA REPOSITORY
+   ======================================================== */
+const nodeData = {
+    agentflow: {
+        sysId: "SYS-NODE // 01 [MULTI-AGENT]",
+        title: "AgentFlow Orchestration",
+        subtitle: "Autonomous Planner-Executor Engine with Model Context Protocol",
+        stats: [
+            { val: "20 / 20", lbl: "State Tests Passed" },
+            { val: "< 2 min", lbl: "15-min Workflow Cut" },
+            { val: "91%", lbl: "Answer Relevance" },
+            { val: "84%", lbl: "Task Completion" }
+        ],
+        body: `
+            Orchestrated a 3-workflow autonomous system (deep research, blog synthesis, email outreach) utilizing <b>LangGraph</b> state graphs with human-in-the-loop gates.<br><br>
+            • Integrated external tool ecosystems (Tavily search & Gmail API) using Anthropic's <b>Model Context Protocol (MCP)</b> without corruption across multi-step cycles.<br>
+            • Enforced 2-stage <b>NeMo Guardrails</b> for zero-leakage security and <b>DeepEval</b> automated test suites scoring 87% content quality.
+        `,
+        chips: ["LangGraph", "FastAPI", "Model Context Protocol", "NeMo Guardrails", "DeepEval", "Groq", "LiteLLM", "PostgreSQL"],
+        simName: "MULTI-AGENT DISPATCH SIMULATOR",
+        simBtn: "EXECUTE PLANNER &rarr; MCP TOOL PIPELINE",
+        simAction: runAgentFlowSim
+    },
+    ragfury: {
+        sysId: "SYS-NODE // 02 [RETRIEVAL]",
+        title: "RAGFury Agentic Engine",
+        subtitle: "High-Throughput Citation RAG with Single-Flight Locking",
+        stats: [
+            { val: "2.12s", lbl: "E2E Hybrid Latency" },
+            { val: "70%", lbl: "Inference Cost Cut" },
+            { val: "0.80s", lbl: "Cached Repeat Query" },
+            { val: "> 95%", lbl: "Adversarial Blocked" }
+        ],
+        body: `
+            Deployed an enterprise-grade agentic RAG system with hybrid dense+sparse retrieval and citation-grounded generation over a 600-document Qdrant Cloud index.<br><br>
+            • Built <b>Redis distributed single-flight locking</b> and scoped caching, crushing latency from 2.8s to 0.8s and stopping redundant LLM calls.<br>
+            • Formed 4-component <b>DeepEval</b> regression suites (78–92% evaluation gates) and <b>LangSmith</b> token cost tracing.
+        `,
+        chips: ["Qdrant Cloud", "Redis Single-Flight", "LangChain", "LangGraph", "Groq", "NeMo Defense", "FastAPI"],
+        simName: "LOW-LATENCY RAG BENCHMARK",
+        simBtn: "SIMULATE REDIS LOCKING & RETRIEVAL",
+        simAction: runRAGFurySim
+    },
+    zeepty: {
+        sysId: "SYS-NODE // 03 [INDUSTRY]",
+        title: "Zeepty AI Internship",
+        subtitle: "Creator-Commerce Outreach & Semantic Retrieval Engine",
+        stats: [
+            { val: "+25%", lbl: "Match Retrieval Lift" },
+            { val: "+15%", lbl: "Outreach Relevance" },
+            { val: "500+", lbl: "Creator Combinations" },
+            { val: "Apr–Jul 25", lbl: "Tenure" }
+        ],
+        body: `
+            Worked as AI Engineering Intern optimizing creator-commerce intelligence systems.<br><br>
+            • Applied semantic embeddings across 500+ creator and product combinations to lift relevant match retrieval by 25%.<br>
+            • Refined prompt orchestration and dynamic retrieval contexts for outbound creator partnerships, lifting response relevance by 15% across 20+ production scenarios.
+        `,
+        chips: ["Semantic Search", "Prompt Engineering", "Vector Embeddings", "LLM Outreach Pipelines"],
+        simName: "SEMANTIC MATCH BENCHMARK",
+        simBtn: "RUN SEMANTIC MATCH VERIFICATION",
+        simAction: runZeeptySim
+    },
+    stack: {
+        sysId: "SYS-NODE // 04 [COMPETENCIES]",
+        title: "Technical Arsenal",
+        subtitle: "Production AI Infrastructure, Evals & Software Architecture",
+        stats: [
+            { val: "1784", lbl: "LeetCode Knight" },
+            { val: "500+", lbl: "Problems Solved" },
+            { val: "3+", lbl: "Vector Databases" },
+            { val: "Top 4.5%", lbl: "JEE Main 2022" }
+        ],
+        body: `
+            <b>AI/GenAI:</b> LLMs, LangGraph, LangChain, CrewAI, MCP, Fine-Tuning, Qdrant, Neo4j, PyTorch.<br>
+            <b>Reliability & Ops:</b> NeMo Guardrails, DeepEval regression testing, LangSmith telemetry, LiteLLM.<br>
+            <b>Backend & Cloud:</b> Python, C++, SQL, FastAPI, Redis, PostgreSQL, AWS, Docker, Kubernetes, Git, CI/CD.
+        `,
+        chips: ["Python", "C++", "LangGraph", "FastAPI", "Redis", "Docker", "AWS", "NeMo", "DeepEval", "Qdrant"],
+        simName: "LEETCODE / SYSTEMS TEST",
+        simBtn: "BENCHMARK ALGORITHMIC PROFICIENCY",
+        simAction: runStackSim
+    },
+    bio: {
+        sysId: "SYS-NODE // 05 [ACADEMICS]",
+        title: "Aviral Bagjani",
+        subtitle: "IIIT Bhagalpur — Electronics & Communication (2022–2026)",
+        stats: [
+            { val: "6.95", lbl: "CGPA (8th Sem)" },
+            { val: "52,750", lbl: "JEE Main AIR" },
+            { val: "2026", lbl: "Graduation Year" },
+            { val: "Calcutta/Remote", lbl: "Location" }
+        ],
+        body: `
+            Electronics & Communication Engineering student at <b>Indian Institute of Information Technology Bhagalpur</b>.<br><br>
+            • Rigorous coursework in Data Structures & Algorithms, DBMS, Operating Systems, Machine Learning, and Computer Networks.<br>
+            • Built proven competitive programming credentials (LeetCode Knight, 1784 rating, 500+ problems).
+        `,
+        chips: ["IIIT Bhagalpur", "B.Tech ECE", "LeetCode Knight", "Algorithms", "Systems Design"],
+        simName: "VERIFY CREDENTIALS",
+        simBtn: "DISPLAY ACADEMIC & CONTEST TELEMETRY",
+        simAction: runBioSim
+    }
+};
 
-/* ---------- PRELOADER ---------- */
-addEventListener('load',()=>setTimeout(()=>document.getElementById('loader').classList.add('hide'),1600));
+/* ========================================================
+   RENDER SELECTED NODE
+   ======================================================== */
+let activeNodeKey = 'agentflow';
 
-/* ---------- TYPING EFFECT ---------- */
-const roles=['Multi-Agent Systems Engineer.','Agentic RAG Architect.','LLM Evals & Guardrails Builder.','LeetCode Knight · 1784.'];
-let ri=0,ci=0,del=false;const tEl=document.getElementById('typer');
-(function type(){
-  const w=roles[ri];
-  tEl.textContent=del?w.slice(0,--ci):w.slice(0,++ci);
-  let sp=del?35:70;
-  if(!del&&ci===w.length){sp=1800;del=true;}
-  else if(del&&ci===0){del=false;ri=(ri+1)%roles.length;sp=350;}
-  setTimeout(type,sp);
-})();
+function selectNode(key) {
+    activeNodeKey = key;
+    playTone(520, 0.05, 'triangle');
 
-/* ---------- SCROLL REVEAL + COUNTERS + BARS ---------- */
-const io=new IntersectionObserver(es=>{
-  es.forEach(e=>{
-    if(!e.isIntersecting)return;
-    e.target.classList.add('in');
-    /* counters */
-    e.target.querySelectorAll('.n[data-count]').forEach(n=>{
-      if(n.dataset.done)return;n.dataset.done=1;
-      const target=parseFloat(n.dataset.count),dec=+(n.dataset.dec||0),suf=n.dataset.suffix||'';
-      const t0=performance.now(),dur=1600;
-      (function step(t){const p=Math.min((t-t0)/dur,1),e2=1-Math.pow(1-p,3);
-        n.textContent=(target*e2).toFixed(dec)+suf;
-        if(p<1)requestAnimationFrame(step);})(t0);
+    // Update button states
+    document.querySelectorAll('.node-btn').forEach((btn, idx) => {
+        const keys = ['agentflow', 'ragfury', 'zeepty', 'stack', 'bio'];
+        if (keys[idx] === key) btn.classList.add('active');
+        else btn.classList.remove('active');
     });
-    /* skill bars */
-    e.target.querySelectorAll('.fill').forEach(f=>f.style.width=f.dataset.w+'%');
-    io.unobserve(e.target);
-  });
-},{threshold:.18});
-document.querySelectorAll('.rv').forEach(el=>io.observe(el));
 
-/* ---------- 3D TILT ON CARDS ---------- */
-document.querySelectorAll('.tilt').forEach(c=>{
-  c.addEventListener('mousemove',e=>{
-    const r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
-    c.style.transform=`perspective(900px) rotateY(${x*5}deg) rotateX(${-y*5}deg) translateY(-4px)`;
-  });
-  c.addEventListener('mouseleave',()=>c.style.transform='');
+    const data = nodeData[key];
+    const panel = document.getElementById('hologram-panel');
+
+    let statsHtml = '';
+    data.stats.forEach(s => {
+        statsHtml += `
+            <div class="stat-pill">
+                <div class="val">${s.val}</div>
+                <div class="lbl">${s.lbl}</div>
+            </div>
+        `;
+    });
+
+    let chipsHtml = '';
+    data.chips.forEach(c => {
+        chipsHtml += `<span class="chip">${c}</span>`;
+    });
+
+    panel.innerHTML = `
+        <div class="screen-header">
+            <span class="screen-sys-id">${data.sysId}</span>
+            <span style="font-family:'JetBrains Mono'; font-size:0.75rem; color:#10b981;">● ONLINE</span>
+        </div>
+        <div class="screen-title">${data.title}</div>
+        <div class="screen-subtitle">${data.subtitle}</div>
+        <div class="stat-pill-row">${statsHtml}</div>
+        <div class="screen-body">${data.body}</div>
+        <div class="tech-chips">${chipsHtml}</div>
+        <div class="sim-box">
+            <div class="sim-title">
+                <span>// ${data.simName}</span>
+                <span style="color:#64748b;">MOCK RUNTIME</span>
+            </div>
+            <button class="sim-trigger" id="sim-btn" onclick="nodeData['${key}'].simAction()">${data.simBtn}</button>
+            <div class="sim-output" id="sim-out"></div>
+        </div>
+    `;
+
+    // Rotate camera toward corresponding 3D target
+    targetCamAngle(key);
+}
+
+// Initial render
+selectNode('agentflow');
+
+/* ========================================================
+   INTERACTIVE SIMULATOR RUNNERS
+   ======================================================== */
+function runAgentFlowSim() {
+    playTone(880, 0.08, 'sawtooth');
+    const out = document.getElementById('sim-out');
+    out.style.display = 'block';
+    out.innerHTML = `[0.00s] Initializing LangGraph state graph...<br>`;
+    setTimeout(() => {
+        playTone(920, 0.04);
+        out.innerHTML += `[0.34s] NeMo Guardrail: Query sanitization passed (0 adversarial tokens).<br>`;
+    }, 280);
+    setTimeout(() => {
+        playTone(1050, 0.05);
+        out.innerHTML += `[0.82s] MCP Dispatch: Tavily search returned 6 live citations.<br>`;
+    }, 600);
+    setTimeout(() => {
+        playTone(1200, 0.08);
+        out.innerHTML += `[1.41s] DeepEval Gate: Task completion 84% &gt; threshold 80% [PASS].<br>`;
+        out.innerHTML += `<b style="color:#34d399;">&check; Workflow completed in 1.41s. Human-in-the-loop draft generated.</b>`;
+    }, 950);
+}
+
+function runRAGFurySim() {
+    playTone(750, 0.08, 'sawtooth');
+    const out = document.getElementById('sim-out');
+    out.style.display = 'block';
+    out.innerHTML = `[0.00s] User query received: "Compare Redis single-flight with semaphore"<br>`;
+    setTimeout(() => {
+        playTone(820, 0.05);
+        out.innerHTML += `[0.04s] Redis single-flight lock acquired. Suppressed 4 duplicate concurrent workers.<br>`;
+    }, 250);
+    setTimeout(() => {
+        playTone(980, 0.05);
+        out.innerHTML += `[0.61s] Qdrant Cloud hybrid search: 5 chunks matched (top score 0.942).<br>`;
+    }, 550);
+    setTimeout(() => {
+        playTone(1280, 0.08);
+        out.innerHTML += `[0.80s] Groq inference stream complete with 3 verified citations.<br>`;
+        out.innerHTML += `<b style="color:#38bdf8;">&check; Latency: 0.80s (Saved 70% inference cost via distributed lock).</b>`;
+    }, 850);
+}
+
+function runZeeptySim() {
+    playTone(600, 0.06);
+    const out = document.getElementById('sim-out');
+    out.style.display = 'block';
+    out.innerHTML = `[EMBED] Generating 1536-dim vector for Creator Profile...<br>`;
+    setTimeout(() => {
+        out.innerHTML += `[RETRIEVAL] Matching against 500+ commerce brand campaigns...<br>`;
+        out.innerHTML += `<b style="color:#34d399;">&check; Semantic match lift confirmed: +25% top-k relevance.</b>`;
+    }, 500);
+}
+
+function runStackSim() {
+    playTone(700, 0.06);
+    const out = document.getElementById('sim-out');
+    out.style.display = 'block';
+    out.innerHTML = `[LEETCODE] Rating: 1784 (Knight Tier, Top 5% globally).<br>`;
+    out.innerHTML += `[DSA] 500+ problems solved across Graph, DP, Tree structures.<br>`;
+    out.innerHTML += `<b style="color:#38bdf8;">&check; Strong systems foundation verified.</b>`;
+}
+
+function runBioSim() {
+    playTone(550, 0.06);
+    const out = document.getElementById('sim-out');
+    out.style.display = 'block';
+    out.innerHTML = `[DEGREE] B.Tech in Electronics & Communication — IIIT Bhagalpur.<br>`;
+    out.innerHTML += `[EXAM] JEE Main AIR 52,750 out of 1.2M+ candidates (95.44%ile).<br>`;
+    out.innerHTML += `<b style="color:#38bdf8;">&check; Ready to join forward-thinking AI teams.</b>`;
+}
+
+/* ========================================================
+   THREE.JS 3D CONSTELLATION & INTERACTIVE CORE
+   ======================================================== */
+const container = document.getElementById('canvas-3d');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 0, 9);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+container.appendChild(renderer.domElement);
+
+// Node 3D Coordinates & Meshes
+const nodePositions = {
+    agentflow: new THREE.Vector3(-2.8, 1.2, 0),
+    ragfury:   new THREE.Vector3(2.8, 1.2, 0),
+    zeepty:    new THREE.Vector3(-2.2, -1.8, 0),
+    stack:     new THREE.Vector3(2.2, -1.8, 0),
+    bio:       new THREE.Vector3(0, 0, 1.2)
+};
+
+const nodeSpheres = {};
+const group = new THREE.Group();
+scene.add(group);
+
+// Central Quantum Core Icosahedron
+const coreGeo = new THREE.IcosahedronGeometry(1.2, 1);
+const coreMat = new THREE.MeshBasicMaterial({
+    color: 0x0284c7,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.25
+});
+const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+group.add(coreMesh);
+
+// Glowing Nodes
+Object.keys(nodePositions).forEach(key => {
+    const pos = nodePositions[key];
+    const sGeo = new THREE.SphereGeometry(0.24, 16, 16);
+    const sMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+    const sMesh = new THREE.Mesh(sGeo, sMat);
+    sMesh.position.copy(pos);
+    group.add(sMesh);
+
+    // Outer wire ring
+    const rGeo = new THREE.RingGeometry(0.32, 0.36, 24);
+    const rMat = new THREE.MeshBasicMaterial({ color: 0x818cf8, side: THREE.DoubleSide });
+    const rMesh = new THREE.Mesh(rGeo, rMat);
+    rMesh.position.copy(pos);
+    group.add(rMesh);
+
+    nodeSpheres[key] = { mesh: sMesh, ring: rMesh };
+});
+
+// Connecting Synapse Lines
+const lineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.25 });
+const connections = [
+    ['agentflow', 'bio'],
+    ['ragfury', 'bio'],
+    ['zeepty', 'bio'],
+    ['stack', 'bio'],
+    ['agentflow', 'ragfury'],
+    ['zeepty', 'stack']
+];
+
+connections.forEach(([n1, n2]) => {
+    const points = [nodePositions[n1], nodePositions[n2]];
+    const lGeo = new THREE.BufferGeometry().setFromPoints(points);
+    const line = new THREE.Line(lGeo, lineMat);
+    group.add(line);
+});
+
+// Surrounding Particle Field
+const pCount = 700;
+const pGeo = new THREE.BufferGeometry();
+const pPos = new Float32Array(pCount * 3);
+for (let i = 0; i < pCount * 3; i += 3) {
+    pPos[i] = (Math.random() - 0.5) * 22;
+    pPos[i+1] = (Math.random() - 0.5) * 16;
+    pPos[i+2] = (Math.random() - 0.5) * 16 - 2;
+}
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+const pMat = new THREE.PointsMaterial({ color: 0x38bdf8, size: 0.035, transparent: true, opacity: 0.55 });
+const pMesh = new THREE.Points(pGeo, pMat);
+group.add(pMesh);
+
+// Mouse Interaction & Parallax
+let mouseX = 0, mouseY = 0;
+let targetRotX = 0, targetRotY = 0;
+
+window.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+    mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+});
+
+function targetCamAngle(key) {
+    const pos = nodePositions[key];
+    targetRotY = -pos.x * 0.15;
+    targetRotX = pos.y * 0.15;
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    // Smooth rotation lerp
+    group.rotation.y += (mouseX * 0.4 + targetRotY - group.rotation.y) * 0.04;
+    group.rotation.x += (-mouseY * 0.4 + targetRotX - group.rotation.x) * 0.04;
+
+    coreMesh.rotation.y += 0.005;
+    coreMesh.rotation.x += 0.003;
+    pMesh.rotation.y += 0.0006;
+
+    // Pulse active node
+    Object.keys(nodeSpheres).forEach(k => {
+        const ring = nodeSpheres[k].ring;
+        ring.rotation.z += 0.02;
+        if (k === activeNodeKey) {
+            nodeSpheres[k].mesh.scale.set(1.4, 1.4, 1.4);
+            nodeSpheres[k].mesh.material.color.setHex(0x34d399);
+        } else {
+            nodeSpheres[k].mesh.scale.set(1, 1, 1);
+            nodeSpheres[k].mesh.material.color.setHex(0x38bdf8);
+        }
+    });
+
+    renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
 });
 </script>
 </body>
 </html>
 """
 
-components.html(PORTFOLIO, height=3000, scrolling=False)
+components.html(CYBER_DECK_HTML, height=920, scrolling=False)
+
