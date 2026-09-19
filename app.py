@@ -1,4 +1,6 @@
 
+
+
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -780,15 +782,15 @@ kbViewport.appendChild(kbRen.domElement);
 const kbAmb = new THREE.AmbientLight(0xffffff, 0.9);
 kbScene.add(kbAmb);
 
-const kbKeyLight = new THREE.DirectionalLight(0xffffff, 1.4);
-kbKeyLight.position.set(4, 8, 4);
+const kbKeyLight = new THREE.DirectionalLight(0xffffff, 1.0);
+kbKeyLight.position.set(2, 9, 5);
 kbScene.add(kbKeyLight);
 
-const kbWarmRim = new THREE.PointLight(0xf59e0b, 1.8, 15);
-kbWarmRim.position.set(-4, -1, 3);
+const kbWarmRim = new THREE.PointLight(0xd97706, 0.7, 18);
+kbWarmRim.position.set(-4, -0.5, 3);
 kbScene.add(kbWarmRim);
 
-const kbCyanRim = new THREE.PointLight(0x38bdf8, 2.2, 15);
+const kbCyanRim = new THREE.PointLight(0x38bdf8, 0.9, 18);
 kbCyanRim.position.set(4, 2, -2);
 kbScene.add(kbCyanRim);
 
@@ -907,35 +909,56 @@ const SKILLS_KEY_DATA = [
 
 function makeSculptedKeyTexture(label, colorHex) {
   const cv = document.createElement('canvas');
-  cv.width = 512; cv.height = 512;
+  // 1024 x 618 matches exact 1.26 : 0.76 keycap aspect ratio
+  cv.width = 1024; cv.height = 618;
   const ctx = cv.getContext('2d');
 
-  const grad = ctx.createLinearGradient(0, 0, 0, 512);
-  grad.addColorStop(0, '#1e293b');
-  grad.addColorStop(1, '#0b1120');
+  // Deep matte keycap surface
+  const grad = ctx.createLinearGradient(0, 0, 0, 618);
+  grad.addColorStop(0, '#182234');
+  grad.addColorStop(1, '#0b0f19');
   ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 512, 512);
+  ctx.fillRect(0, 0, 1024, 618);
 
+  // Outer Neon Accent Border
   ctx.strokeStyle = colorHex;
-  ctx.lineWidth = 14;
-  ctx.strokeRect(10, 10, 492, 492);
+  ctx.lineWidth = 20;
+  ctx.strokeRect(12, 12, 1000, 594);
 
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+  // Inner subtle inset border
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
   ctx.lineWidth = 8;
-  ctx.strokeRect(26, 26, 460, 460);
+  ctx.strokeRect(36, 36, 952, 546);
 
+  // Indicator LED dot in corner
   ctx.fillStyle = colorHex;
+  ctx.shadowColor = colorHex;
+  ctx.shadowBlur = 15;
   ctx.beginPath();
-  ctx.arc(60, 60, 14, 0, Math.PI * 2);
+  ctx.arc(90, 85, 22, 0, Math.PI * 2);
   ctx.fill();
+  ctx.shadowBlur = 0;
 
-  ctx.fillStyle = '#f8fafc';
-  ctx.font = 'bold 44px "JetBrains Mono", monospace';
+  // Ultra-crisp high-contrast label
+  ctx.fillStyle = '#ffffff';
+  // Dynamic font size: longer words get tailored fit
+  const fontSize = label.length > 8 ? 82 : 96;
+  ctx.font = '900 ' + fontSize + 'px "JetBrains Mono", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(label, 256, 265);
 
-  return new THREE.CanvasTexture(cv);
+  // Crisp text shadow for contrast
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 4;
+  ctx.fillText(label, 512, 320);
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.anisotropy = 16;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
+  return tex;
 }
 
 const keycapMeshes = [];
@@ -951,12 +974,12 @@ SKILLS_KEY_DATA.forEach((key, idx) => {
   const keyTex = makeSculptedKeyTexture(key.label, key.color);
 
   const capMat = [
-    new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.2 }),
-    new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.2 }),
-    new THREE.MeshStandardMaterial({ map: keyTex, roughness: 0.35, metalness: 0.15 }),
-    new THREE.MeshStandardMaterial({ color: 0x0a0f1d }),
-    new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.2 }),
-    new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.2 }),
+    new THREE.MeshStandardMaterial({ color: 0x151e2e, roughness: 0.6, metalness: 0.1 }),
+    new THREE.MeshStandardMaterial({ color: 0x151e2e, roughness: 0.6, metalness: 0.1 }),
+    new THREE.MeshStandardMaterial({ map: keyTex, roughness: 0.85, metalness: 0.05 }), // High roughness prevents blinding glare
+    new THREE.MeshStandardMaterial({ color: 0x070b14 }),
+    new THREE.MeshStandardMaterial({ color: 0x151e2e, roughness: 0.6, metalness: 0.1 }),
+    new THREE.MeshStandardMaterial({ color: 0x151e2e, roughness: 0.6, metalness: 0.1 }),
   ];
   const capMesh = new THREE.Mesh(capGeo, capMat);
   capMesh.position.y = 0.22;
@@ -1304,7 +1327,6 @@ document.querySelectorAll('.rv').forEach(el => observer.observe(el));
 components.html(PORTFOLIO, height=3300, scrolling=False)
 
 
-
 # import streamlit as st
 # import streamlit.components.v1 as components
 
@@ -1531,49 +1553,76 @@ components.html(PORTFOLIO, height=3300, scrolling=False)
 # /* ========================================================
 #    AKASH-INSPIRED 3D INTERACTIVE KEYBOARD ARSENAL
 #    ======================================================== */
+# /* ========================================================
+#    STUDIO 3D MACROPAD & TELEMETRY CONSOLE
+#    ======================================================== */
 # .keyboard-section-wrapper{
-#   background:rgba(15,23,42,.7);border:1px solid rgba(56,189,248,.25);
-#   border-radius:24px;padding:32px;backdrop-filter:blur(20px);position:relative;overflow:hidden;
-#   box-shadow:0 20px 60px -20px rgba(56,189,248,.2);
+#   background:radial-gradient(120% 120% at 50% 0%, rgba(30,41,59,0.5) 0%, rgba(10,15,29,0.9) 100%);
+#   border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:28px;
+#   backdrop-filter:blur(24px);position:relative;overflow:hidden;
+#   box-shadow:0 24px 60px -20px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1);
 # }
 # .keyboard-telemetry-header{
-#   display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
-#   border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:18px;margin-bottom:24px;
+#   display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;
+#   border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:18px;margin-bottom:20px;
 # }
-# .kb-title-block h3{font-size:1.25rem;font-weight:700;color:#fff;display:flex;align-items:center;gap:10px}
-# .kb-title-block p{font-size:.82rem;color:#94a3b8;font-family:'JetBrains Mono',monospace;margin-top:4px}
+# .kb-title-block h3{font-size:1.2rem;font-weight:700;color:#fff;letter-spacing:-0.01em;display:flex;align-items:center;gap:10px}
+# .kb-title-block p{font-size:0.8rem;color:#94a3b8;font-family:'JetBrains Mono',monospace;margin-top:4px}
+# .kb-controls-group{display:flex;align-items:center;gap:10px}
+# .kb-pipeline-btn{
+#   background:linear-gradient(135deg,#f59e0b,#d97706);color:#030712;
+#   font-family:'JetBrains Mono',monospace;font-weight:700;font-size:0.75rem;
+#   padding:8px 14px;border-radius:8px;border:none;cursor:pointer;
+#   display:flex;align-items:center;gap:6px;box-shadow:0 0 20px rgba(245,158,11,0.35);
+#   transition:transform 0.15s ease,box-shadow 0.15s ease;
+# }
+# .kb-pipeline-btn:hover{transform:translateY(-1px);box-shadow:0 0 25px rgba(245,158,11,0.55)}
+# .kb-pipeline-btn:active{transform:translateY(1px)}
 # .kb-live-inspect{
-#   background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.3);
-#   padding:8px 16px;border-radius:10px;font-family:'JetBrains Mono',monospace;
-#   font-size:.8rem;color:#38bdf8;display:flex;align-items:center;gap:10px;
+#   background:rgba(15,23,42,0.8);border:1px solid rgba(56,189,248,0.3);
+#   padding:7px 14px;border-radius:8px;font-family:'JetBrains Mono',monospace;
+#   font-size:0.78rem;color:#38bdf8;display:flex;align-items:center;gap:8px;
 # }
-
-# /* 3D Keyboard Scene Container */
 # #keyboard-3d-viewport{
-#   width:100%;height:380px;border-radius:18px;background:rgba(3,7,18,.8);
-#   border:1px solid rgba(255,255,255,.06);position:relative;overflow:hidden;
+#   width:100%;height:380px;border-radius:16px;
+#   background:radial-gradient(circle at 50% 50%, rgba(15,23,42,0.9) 0%, rgba(3,7,18,0.98) 100%);
+#   border:1px solid rgba(255,255,255,0.06);position:relative;overflow:hidden;cursor:grab;
 # }
+# #keyboard-3d-viewport:active{cursor:grabbing}
 # .kb-instructions{
-#   position:absolute;bottom:14px;left:18px;z-index:5;
-#   font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#64748b;
-#   display:flex;align-items:center;gap:8px;background:rgba(3,7,18,.6);
-#   padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.05);
+#   position:absolute;bottom:12px;left:14px;z-index:5;
+#   font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#64748b;
+#   display:flex;align-items:center;gap:8px;background:rgba(3,7,18,0.7);
+#   padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.05);
+#   backdrop-filter:blur(6px);
 # }
-
-# /* Dynamic Skill Telemetry Inspector Panel */
 # .skill-detail-panel{
-#   margin-top:20px;background:rgba(10,16,32,.85);border:1px solid rgba(255,255,255,.08);
-#   border-radius:16px;padding:20px 24px;transition:all .3s ease;
+#   margin-top:18px;background:rgba(7,11,22,0.9);border:1px solid rgba(255,255,255,0.08);
+#   border-radius:16px;padding:20px 24px;display:grid;grid-template-columns:1.4fr 1fr;
+#   gap:20px;transition:border-color 0.3s ease,box-shadow 0.3s ease;
 # }
-# .skill-detail-panel.active-glow{
-#   border-color:rgba(56,189,248,.6);box-shadow:0 0 30px rgba(56,189,248,.15);
+# .skill-detail-panel.active-glow{border-color:rgba(56,189,248,0.6);box-shadow:0 0 35px rgba(56,189,248,0.15)}
+# .skill-info-col{display:flex;flex-direction:column;justify-content:space-between}
+# .skill-header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+# .skill-name-txt{font-size:1.15rem;font-weight:700;color:#f8fafc;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:8px}
+# .skill-tag-pill{font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#38bdf8;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.3);padding:3px 8px;border-radius:6px}
+# .skill-desc-txt{color:#94a3b8;font-size:0.88rem;line-height:1.55;margin-bottom:14px}
+# .skill-metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+# .skill-metric-item{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:8px 10px}
+# .skill-metric-lbl{font-size:0.65rem;color:#64748b;font-family:'JetBrains Mono',monospace;text-transform:uppercase;margin-bottom:2px}
+# .skill-metric-val{font-size:0.85rem;color:#4ade80;font-family:'JetBrains Mono',monospace;font-weight:600}
+# .skill-telemetry-col{background:rgba(3,7,18,0.7);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column}
+# .telemetry-title-bar{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:8px}
+# .telemetry-title{font-size:0.68rem;font-family:'JetBrains Mono',monospace;color:#64748b;letter-spacing:0.05em;display:flex;align-items:center;gap:6px}
+# .telemetry-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e}
+# .telemetry-logs{font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#cbd5e1;line-height:1.6;max-height:95px;overflow-y:auto;scrollbar-width:none}
+# .telemetry-logs .log-time{color:#64748b}
+# .telemetry-logs .log-ok{color:#4ade80}
+# .telemetry-logs .log-hi{color:#38bdf8}
+# @media (max-width:768px){
+#   .skill-detail-panel{grid-template-columns:1fr}
+#   .skill-metrics-grid{grid-template-columns:repeat(2,1fr)}
 # }
-# .skill-header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-# .skill-name-txt{font-size:1.1rem;font-weight:700;color:#38bdf8;font-family:'JetBrains Mono',monospace}
-# .skill-level-txt{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:#4ade80}
-# .skill-desc-txt{color:#94a3b8;font-size:.9rem;line-height:1.6}
-# .skill-meter-track{margin-top:12px;height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
-# .skill-meter-fill{height:100%;width:80%;background:linear-gradient(90deg,#38bdf8,#818cf8);transition:width .6s cubic-bezier(.16,1,.3,1)}
 
 # /* TIMELINE */
 # .tl{position:relative;padding-left:36px}
@@ -1714,32 +1763,67 @@ components.html(PORTFOLIO, height=3300, scrolling=False)
 #     <div class="keyboard-section-wrapper rv">
 #       <div class="keyboard-telemetry-header">
 #         <div class="kb-title-block">
-#           <h3>⌨️ INTERACTIVE 3D MECHANICAL KEYCAP ARSENAL</h3>
-#           <p>Every keycap is a specialized production tool. Hover or click keys to depress switches &amp; inspect telemetry.</p>
+#           <h3>⌨️ CUSTOM CNC MACROPAD TELEMETRY</h3>
+#           <p>Scrub camera or press any keycap to depress mechanical switch &amp; inspect architecture metrics.</p>
 #         </div>
-#         <div class="kb-live-inspect" id="kb-active-chip">
-#           <span>ACTIVE SWITCH:</span> <b id="kb-chip-label">LANGGRAPH (CYCLE DAGS)</b>
+#         <div class="kb-controls-group">
+#           <button class="kb-pipeline-btn" id="kb-run-pipeline">
+#             <span>⚡ RUN PIPELINE</span>
+#           </button>
+#           <div class="kb-live-inspect" id="kb-active-chip">
+#             <span>SWITCH:</span> <b id="kb-chip-label">LANGGRAPH (DAG ORCHESTRATION)</b>
+#           </div>
 #         </div>
 #       </div>
 
 #       <!-- 3D KEYBOARD VIEWPORT -->
 #       <div id="keyboard-3d-viewport">
 #         <div class="kb-instructions">
-#           <span>🎮 CLICK / DRAG TO ROTATE KEYBOARD · CLICK KEYCAPS TO DEPRESS</span>
+#           <span>🕹️ DRAG TO ROTATE · CLICK KEYS TO DEPRESS SWITCHES</span>
 #         </div>
 #       </div>
 
-#       <!-- DYNAMIC TELEMETRY PANEL -->
+#       <!-- DYNAMIC HARDWARE & LOGS PANEL -->
 #       <div class="skill-detail-panel" id="skill-inspector">
-#         <div class="skill-header-row">
-#           <div class="skill-name-txt" id="insp-name">LangGraph &amp; Multi-Agent Workflows</div>
-#           <div class="skill-level-txt" id="insp-stat">95% PRODUCTION READINESS</div>
+#         <div class="skill-info-col">
+#           <div>
+#             <div class="skill-header-row">
+#               <div class="skill-name-txt" id="insp-name">
+#                 <span>LangGraph</span>
+#               </div>
+#               <span class="skill-tag-pill" id="insp-category">ORCHESTRATION</span>
+#             </div>
+#             <div class="skill-desc-txt" id="insp-desc">
+#               Stateful cyclic DAGs with checkpointing, multi-worker delegation, and human-in-the-loop review nodes.
+#             </div>
+#           </div>
+
+#           <div class="skill-metrics-grid">
+#             <div class="skill-metric-item">
+#               <div class="skill-metric-lbl">P99 Latency</div>
+#               <div class="skill-metric-val" id="insp-m1">&lt; 180ms overhead</div>
+#             </div>
+#             <div class="skill-metric-item">
+#               <div class="skill-metric-lbl">Architecture Impact</div>
+#               <div class="skill-metric-val" id="insp-m2">Cyclic Sub-graphs</div>
+#             </div>
+#             <div class="skill-metric-item">
+#               <div class="skill-metric-lbl">Key Synergy</div>
+#               <div class="skill-metric-val" id="insp-m3">Redis + Qdrant</div>
+#             </div>
+#           </div>
 #         </div>
-#         <div class="skill-desc-txt" id="insp-desc">
-#           Stateful cyclic DAG orchestration, checkpointing, multi-worker delegation, and human-in-the-loop review nodes.
-#         </div>
-#         <div class="skill-meter-track">
-#           <div class="skill-meter-fill" id="insp-fill" style="width: 95%;"></div>
+
+#         <div class="skill-telemetry-col">
+#           <div class="telemetry-title-bar">
+#             <div class="telemetry-title"><span class="telemetry-dot"></span> TELEMETRY TRACE STREAM</div>
+#             <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:#64748b;" id="insp-status">STATUS: OK</span>
+#           </div>
+#           <div class="telemetry-logs" id="insp-logs">
+#             <div><span class="log-time">[00:00.012]</span> <span class="log-hi">INIT_NODE:</span> graph_state_loaded</div>
+#             <div><span class="log-time">[00:00.045]</span> <span class="log-ok">CHECKPOINT:</span> redis_state_synced</div>
+#             <div><span class="log-time">[00:00.089]</span> ROUTE -&gt; worker_pool [OK]</div>
+#           </div>
 #         </div>
 #       </div>
 #     </div>
@@ -1805,21 +1889,47 @@ components.html(PORTFOLIO, height=3300, scrolling=False)
 #     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 #   }
 # }
-# function playMechanicalClick(freq = 800, dur = 0.04) {
+# function playMechanicalClick(freq = 600, isRelease = false) {
 #   if (!audioEnabled) return;
 #   try {
 #     initAudio();
+#     const now = audioCtx.currentTime;
+#     const bufferSize = Math.floor(audioCtx.sampleRate * (isRelease ? 0.015 : 0.025));
+#     const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+#     const output = noiseBuffer.getChannelData(0);
+#     for (let i = 0; i < bufferSize; i++) {
+#       output[i] = Math.random() * 2 - 1;
+#     }
+#     const whiteNoise = audioCtx.createBufferSource();
+#     whiteNoise.buffer = noiseBuffer;
+
+#     const noiseFilter = audioCtx.createBiquadFilter();
+#     noiseFilter.type = 'bandpass';
+#     noiseFilter.frequency.setValueAtTime(isRelease ? 1800 : 2600, now);
+#     noiseFilter.Q.setValueAtTime(3, now);
+
+#     const noiseGain = audioCtx.createGain();
+#     noiseGain.gain.setValueAtTime(isRelease ? 0.08 : 0.22, now);
+#     noiseGain.gain.exponentialRampToValueAtTime(0.001, now + (isRelease ? 0.015 : 0.025));
+
+#     whiteNoise.connect(noiseFilter);
+#     noiseFilter.connect(noiseGain);
+#     noiseGain.connect(audioCtx.destination);
+#     whiteNoise.start(now);
+
 #     const osc = audioCtx.createOscillator();
-#     const gain = audioCtx.createGain();
+#     const oscGain = audioCtx.createGain();
 #     osc.type = 'triangle';
-#     osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-#     osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + dur);
-#     gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-#     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
-#     osc.connect(gain);
-#     gain.connect(audioCtx.destination);
-#     osc.start();
-#     osc.stop(audioCtx.currentTime + dur);
+#     osc.frequency.setValueAtTime(isRelease ? 180 : 320, now);
+#     osc.frequency.exponentialRampToValueAtTime(80, now + 0.045);
+
+#     oscGain.gain.setValueAtTime(isRelease ? 0.05 : 0.28, now);
+#     oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+
+#     osc.connect(oscGain);
+#     oscGain.connect(audioCtx.destination);
+#     osc.start(now);
+#     osc.stop(now + 0.05);
 #   } catch(e){}
 # }
 # function playChime(freq = 520) {
@@ -1978,111 +2088,224 @@ components.html(PORTFOLIO, height=3300, scrolling=False)
 # /* ========================================================
 #    THE 3D INTERACTIVE MECHANICAL KEYBOARD (LOCAL VIEWPORT)
 #    ======================================================== */
+# /* ========================================================
+#    THE 3D INTERACTIVE MECHANICAL KEYBOARD (STUDIO MACROPAD)
+#    ======================================================== */
 # const kbViewport = document.getElementById('keyboard-3d-viewport');
 # const kbScene = new THREE.Scene();
-# const kbCam = new THREE.PerspectiveCamera(45, kbViewport.clientWidth / kbViewport.clientHeight, 0.1, 100);
-# kbCam.position.set(0, 4.2, 5.2);
-# kbCam.lookAt(0, -0.2, 0);
+# const kbCam = new THREE.PerspectiveCamera(40, kbViewport.clientWidth / kbViewport.clientHeight, 0.1, 100);
+# kbCam.position.set(0, 4.0, 5.0);
+# kbCam.lookAt(0, -0.15, 0);
 
-# const kbRen = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+# const kbRen = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
 # kbRen.setSize(kbViewport.clientWidth, kbViewport.clientHeight);
 # kbRen.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+# kbRen.shadowMap.enabled = true;
+# kbRen.shadowMap.type = THREE.PCFSoftShadowMap;
 # kbViewport.appendChild(kbRen.domElement);
 
-# // Keyboard Lighting
-# const kbAmb = new THREE.AmbientLight(0xffffff, 0.75);
+# // Studio Lighting
+# const kbAmb = new THREE.AmbientLight(0xffffff, 0.9);
 # kbScene.add(kbAmb);
-# const kbKeyLight = new THREE.PointLight(0x38bdf8, 3.5, 25);
-# kbKeyLight.position.set(0, 5, 3);
+
+# const kbKeyLight = new THREE.DirectionalLight(0xffffff, 1.4);
+# kbKeyLight.position.set(4, 8, 4);
 # kbScene.add(kbKeyLight);
-# const kbUnderLight = new THREE.PointLight(0x818cf8, 2.5, 20);
-# kbUnderLight.position.set(0, -1, 0);
-# kbScene.add(kbUnderLight);
 
-# // Keyboard Chassis Baseplate
+# const kbWarmRim = new THREE.PointLight(0xf59e0b, 1.8, 15);
+# kbWarmRim.position.set(-4, -1, 3);
+# kbScene.add(kbWarmRim);
+
+# const kbCyanRim = new THREE.PointLight(0x38bdf8, 2.2, 15);
+# kbCyanRim.position.set(4, 2, -2);
+# kbScene.add(kbCyanRim);
+
+# // Main Macropad Assembly Group
 # const kbChassis = new THREE.Group();
-# const plateGeo = new THREE.BoxGeometry(6.6, 0.35, 3.2);
-# const plateMat = new THREE.MeshStandardMaterial({
-#   color: 0x090d16, roughness: 0.4, metalness: 0.85
+
+# // 1. CNC Aluminum Bottom Case
+# const caseGeo = new THREE.BoxGeometry(6.8, 0.45, 3.4);
+# const caseMat = new THREE.MeshStandardMaterial({
+#   color: 0x0f172a,
+#   roughness: 0.35,
+#   metalness: 0.8
 # });
-# const chassisMesh = new THREE.Mesh(plateGeo, plateMat);
-# chassisMesh.position.y = -0.2;
-# kbChassis.add(chassisMesh);
+# const caseMesh = new THREE.Mesh(caseGeo, caseMat);
+# caseMesh.position.y = -0.28;
+# kbChassis.add(caseMesh);
 
-# // Glowing Neon Bevel Rim around keyboard
-# const rimGeo = new THREE.BoxGeometry(6.75, 0.05, 3.35);
-# const rimMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true });
-# const rimMesh = new THREE.Mesh(rimGeo, rimMat);
-# rimMesh.position.y = -0.05;
-# kbChassis.add(rimMesh);
+# // 2. Brass Switch Plate
+# const plateGeo = new THREE.BoxGeometry(6.5, 0.05, 3.1);
+# const plateMat = new THREE.MeshStandardMaterial({
+#   color: 0xd97706,
+#   metalness: 0.85,
+#   roughness: 0.25
+# });
+# const brassPlate = new THREE.Mesh(plateGeo, plateMat);
+# brassPlate.position.y = -0.04;
+# kbChassis.add(brassPlate);
 
-# // Keycap definitions (Your Production Skills)
+# // 3. Corner Industrial Screws/Bolts
+# const screwGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.06, 12);
+# const screwMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.95, roughness: 0.1 });
+# [
+#   [-3.15, -1.45], [3.15, -1.45],
+#   [-3.15, 1.45],  [3.15, 1.45]
+# ].forEach(([sx, sz]) => {
+#   const screw = new THREE.Mesh(screwGeo, screwMat);
+#   screw.position.set(sx, -0.04, sz);
+#   kbChassis.add(screw);
+# });
+
+# // Detailed Key Data with Engineering Metrics & Colors
 # const SKILLS_KEY_DATA = [
-#   // ROW 1
-#   { label: "LANGGRAPH", row: 0, col: 0, level: "95%", desc: "Stateful cyclic multi-agent DAGs, human-in-the-loop gates, and checkpoint persistence." },
-#   { label: "MCP", row: 0, col: 1, level: "94%", desc: "Model Context Protocol bridges for dynamic tool orchestration (Tavily, Gmail, Filesystems)." },
-#   { label: "QDRANT", row: 0, col: 2, level: "92%", desc: "Hybrid sparse/dense vector indexing, payload filters, and sub-second semantic retrieval." },
-#   { label: "REDIS LOCK", row: 0, col: 3, level: "90%", desc: "Single-flight distributed locking & cache shields reducing redundant LLM calls by 70%." },
-#   // ROW 2
-#   { label: "DEEPEVAL", row: 1, col: 0, level: "92%", desc: "Automated test suites evaluating G-Eval, Hallucination, Task Completion & Answer Relevance." },
-#   { label: "NEMO", row: 1, col: 1, level: "95%", desc: "Self-correcting guardrails blocking >95% jailbreaks, prompt injections, and sensitive data leakage." },
-#   { label: "FASTAPI", row: 1, col: 2, level: "93%", desc: "High-throughput asynchronous APIs, streaming SSE completions, and Pydantic validation." },
-#   { label: "LANGSMITH", row: 1, col: 3, level: "88%", desc: "End-to-end trace observability, token cost attribution, and latency debugging." },
-#   // ROW 3
-#   { label: "POSTGRES", row: 2, col: 0, level: "86%", desc: "Relational persistence, user sessions, conversation history, and transaction safety." },
-#   { label: "DOCKER", row: 2, col: 1, level: "85%", desc: "Containerized reproducible agent runtimes, microservices networking, and cloud deploys." },
-#   { label: "LEETCODE", row: 2, col: 2, level: "1784", desc: "Knight badge, 500+ solved across graph theory, dynamic programming, and binary search." },
-#   { label: "PYTORCH", row: 2, col: 3, level: "84%", desc: "Model fine-tuning, embeddings generation, vector transformations, and tensor operations." }
+#   { 
+#     label: "LANGGRAPH", row: 0, col: 0, category: "ORCHESTRATION", color: "#f59e0b",
+#     desc: "Stateful cyclic DAGs with checkpointing, multi-worker delegation, and human-in-the-loop review nodes.",
+#     m1: "< 180ms overhead", m2: "Cyclic Sub-graphs", m3: "Redis + Qdrant",
+#     logs: ["[00:00.012] graph_state: initialised", "[00:00.045] checkpoint: redis_saved", "[00:00.089] route -> worker_node [OK]"]
+#   },
+#   { 
+#     label: "MCP", row: 0, col: 1, category: "PROTOCOL", color: "#38bdf8",
+#     desc: "Model Context Protocol bridges for dynamic tool discovery, external filesystem & API orchestration.",
+#     m1: "Dynamic Schema", m2: "JSON-RPC 2.0", m3: "Claude / Gemini",
+#     logs: ["[00:00.008] mcp_client: connect_pipe", "[00:00.021] register_tools: 8 tools loaded", "[00:00.040] handshake -> verified"]
+#   },
+#   { 
+#     label: "QDRANT", row: 0, col: 2, category: "VECTOR SEARCH", color: "#ec4899",
+#     desc: "Hybrid dense & sparse vector indexing, payload filtering, and sub-50ms approximate nearest neighbor queries.",
+#     m1: "Sub-45ms P99", m2: "HNSW + Payload", m3: "FastAPI + Embeddings",
+#     logs: ["[00:00.015] qdrant_search: hybrid_pass", "[00:00.038] top_k=5 cosine_score=0.91", "[00:00.042] payload_filter: applied"]
+#   },
+#   { 
+#     label: "REDIS LOCK", row: 0, col: 3, category: "STATE & CACHE", color: "#ef4444",
+#     desc: "Single-flight distributed locking & cache shields reducing redundant LLM inferences by 70%.",
+#     m1: "70% Cache Hit", m2: "Redlock Protocol", m3: "LangGraph Memory",
+#     logs: ["[00:00.003] redlock: acquire token_0x39", "[00:00.007] cache_lookup: hit_found", "[00:00.009] ttl_renewed: 300s"]
+#   },
+#   { 
+#     label: "DEEPEVAL", row: 1, col: 0, category: "EVALUATION", color: "#8b5cf6",
+#     desc: "Automated test suites evaluating G-Eval hallucination rate, task completion, and context relevance.",
+#     m1: "< 2% Hallucination", m2: "G-Eval Standard", m3: "CI/CD Gate",
+#     logs: ["[00:00.120] metric_geval: scoring...", "[00:00.310] hallucination_check: 0.012", "[00:00.325] verdict: PASSED (98.8%)"]
+#   },
+#   { 
+#     label: "NEMO", row: 1, col: 1, category: "GUARDRAILS", color: "#10b981",
+#     desc: "Self-correcting guardrails blocking >95% jailbreak vectors, prompt injection, and PII leaks.",
+#     m1: "> 95% Defense", m2: "Input/Output Gates", m3: "NeMo Guardrail Colang",
+#     logs: ["[00:00.006] rail_input: check_jailbreak", "[00:00.014] pii_scanner: 0 entities found", "[00:00.018] guardrail: PASS"]
+#   },
+#   { 
+#     label: "FASTAPI", row: 1, col: 2, category: "BACKEND API", color: "#06b6d4",
+#     desc: "High-throughput asynchronous APIs with SSE streaming completions and strict Pydantic validation.",
+#     m1: "1,200 Req/sec", m2: "SSE Streaming", m3: "AsyncIO Event Loop",
+#     logs: ["[00:00.004] sse_stream: open /v1/chat", "[00:00.009] chunk_0: yield token", "[00:00.022] connection: keep-alive"]
+#   },
+#   { 
+#     label: "LANGSMITH", row: 1, col: 3, category: "OBSERVABILITY", color: "#f97316",
+#     desc: "End-to-end trace observability, token cost attribution per run, and execution latency waterfalls.",
+#     m1: "Full Tracing", m2: "Cost Attribution", m3: "Span Debugging",
+#     logs: ["[00:00.010] span_start: agent_root", "[00:00.095] tokens: prompt=412 comp=98", "[00:00.098] trace_id: 8bfa93 uploaded"]
+#   },
+#   { 
+#     label: "POSTGRES", row: 2, col: 0, category: "DATABASE", color: "#3b82f6",
+#     desc: "Relational persistence, user sessions, conversation history, and transaction safety.",
+#     m1: "ACID Compliant", m2: "JSONB Indexing", m3: "Connection Pooling",
+#     logs: ["[00:00.005] pg_pool: checkout conn_4", "[00:00.011] tx_begin: insert_message", "[00:00.016] commit: wal_flush [OK]"]
+#   },
+#   { 
+#     label: "DOCKER", row: 2, col: 1, category: "INFRASTRUCTURE", color: "#0284c7",
+#     desc: "Containerized reproducible agent runtimes, microservices networking, and isolated execution.",
+#     m1: "Immutable Runtimes", m2: "Multi-stage Build", m3: "Compose & Cloud Run",
+#     logs: ["[00:00.030] container: health_check", "[00:00.032] port_bind: 8000:8000", "[00:00.035] runtime: READY"]
+#   },
+#   { 
+#     label: "LEETCODE", row: 2, col: 2, category: "ALGORITHMS", color: "#eab308",
+#     desc: "Knight badge (1784+ rating), 500+ problems solved across graph theory, DP, and search optimization.",
+#     m1: "Rating: 1784+", m2: "Knight Badge", m3: "500+ Problems",
+#     logs: ["[00:00.001] algo: topological_sort", "[00:00.004] time_complexity: O(V + E)", "[00:00.006] tests: 45/45 passed"]
+#   },
+#   { 
+#     label: "PYTORCH", row: 2, col: 3, category: "ML / TENSORS", color: "#ee4c2c",
+#     desc: "Model fine-tuning, embedding generation, vector transformations, and tensor math pipelines.",
+#     m1: "GPU Acceleration", m2: "Custom Embeddings", m3: "HuggingFace Interop",
+#     logs: ["[00:00.018] torch.cuda: allocate_tensor", "[00:00.042] forward_pass: 768 dims", "[00:00.055] embedding: normalized"]
+#   }
 # ];
 
-# // Helper to create texture for key legends
-# function makeKeyTexture(text) {
+# function makeSculptedKeyTexture(label, colorHex) {
 #   const cv = document.createElement('canvas');
-#   cv.width = 256; cv.height = 256;
+#   cv.width = 512; cv.height = 512;
 #   const ctx = cv.getContext('2d');
-#   ctx.fillStyle = '#0f172a';
-#   ctx.fillRect(0, 0, 256, 256);
-#   // Border
-#   ctx.strokeStyle = '#38bdf8';
-#   ctx.lineWidth = 10;
-#   ctx.strokeRect(6, 6, 244, 244);
-#   // Text
+
+#   const grad = ctx.createLinearGradient(0, 0, 0, 512);
+#   grad.addColorStop(0, '#1e293b');
+#   grad.addColorStop(1, '#0b1120');
+#   ctx.fillStyle = grad;
+#   ctx.fillRect(0, 0, 512, 512);
+
+#   ctx.strokeStyle = colorHex;
+#   ctx.lineWidth = 14;
+#   ctx.strokeRect(10, 10, 492, 492);
+
+#   ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+#   ctx.lineWidth = 8;
+#   ctx.strokeRect(26, 26, 460, 460);
+
+#   ctx.fillStyle = colorHex;
+#   ctx.beginPath();
+#   ctx.arc(60, 60, 14, 0, Math.PI * 2);
+#   ctx.fill();
+
 #   ctx.fillStyle = '#f8fafc';
-#   ctx.font = 'bold 30px "JetBrains Mono", monospace';
+#   ctx.font = 'bold 44px "JetBrains Mono", monospace';
 #   ctx.textAlign = 'center';
 #   ctx.textBaseline = 'middle';
-#   ctx.fillText(text, 128, 128);
+#   ctx.fillText(label, 256, 265);
+
 #   return new THREE.CanvasTexture(cv);
 # }
 
 # const keycapMeshes = [];
 # const startX = -2.25;
-# const startZ = -1.0;
+# const startZ = -0.95;
 # const stepX = 1.5;
-# const stepZ = 1.0;
+# const stepZ = 0.95;
 
 # SKILLS_KEY_DATA.forEach((key, idx) => {
 #   const keyGroup = new THREE.Group();
-#   const capGeo = new THREE.BoxGeometry(1.22, 0.45, 0.78);
-#   const keyTex = makeKeyTexture(key.label);
   
+#   const capGeo = new THREE.BoxGeometry(1.26, 0.42, 0.76);
+#   const keyTex = makeSculptedKeyTexture(key.label, key.color);
+
 #   const capMat = [
-#     new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.6, roughness: 0.3 }),
-#     new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.6, roughness: 0.3 }),
-#     new THREE.MeshStandardMaterial({ map: keyTex, metalness: 0.3, roughness: 0.4 }), // Top with legend
-#     new THREE.MeshStandardMaterial({ color: 0x0f172a }),
-#     new THREE.MeshStandardMaterial({ color: 0x1e293b }),
-#     new THREE.MeshStandardMaterial({ color: 0x1e293b }),
+#     new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.2 }),
+#     new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.2 }),
+#     new THREE.MeshStandardMaterial({ map: keyTex, roughness: 0.35, metalness: 0.15 }),
+#     new THREE.MeshStandardMaterial({ color: 0x0a0f1d }),
+#     new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.2 }),
+#     new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.2 }),
 #   ];
 #   const capMesh = new THREE.Mesh(capGeo, capMat);
 #   capMesh.position.y = 0.22;
 #   keyGroup.add(capMesh);
 
-#   // Underglow light prism
-#   const glowGeo = new THREE.BoxGeometry(1.28, 0.05, 0.84);
-#   const glowMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.35 });
+#   const stemGeo = new THREE.BoxGeometry(0.35, 0.25, 0.35);
+#   const stemMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3 });
+#   const stemMesh = new THREE.Mesh(stemGeo, stemMat);
+#   stemMesh.position.y = 0.05;
+#   keyGroup.add(stemMesh);
+
+#   const glowGeo = new THREE.PlaneGeometry(1.3, 0.8);
+#   const glowMat = new THREE.MeshBasicMaterial({ 
+#     color: new THREE.Color(key.color), 
+#     transparent: true, 
+#     opacity: 0.4,
+#     side: THREE.DoubleSide
+#   });
 #   const glowMesh = new THREE.Mesh(glowGeo, glowMat);
-#   glowMesh.position.y = 0.02;
+#   glowMesh.rotation.x = Math.PI / 2;
+#   glowMesh.position.y = 0.01;
 #   keyGroup.add(glowMesh);
 
 #   const posX = startX + key.col * stepX;
@@ -2090,8 +2313,7 @@ components.html(PORTFOLIO, height=3300, scrolling=False)
 #   keyGroup.position.set(posX, 0, posZ);
 
 #   keyGroup.userData = {
-#     originalY: 0,
-#     depressedY: -0.16,
+#     depressedY: -0.15,
 #     data: key,
 #     glowMesh: glowMesh,
 #     capMesh: capMesh
@@ -2101,70 +2323,122 @@ components.html(PORTFOLIO, height=3300, scrolling=False)
 #   keycapMeshes.push(keyGroup);
 # });
 
-# // Tilt the entire keyboard slightly towards user
-# kbChassis.rotation.x = 0.22;
+# kbChassis.rotation.x = 0.26;
 # kbScene.add(kbChassis);
 
 # /* ========================================================
-#    KEYBOARD RAYCASTING & INTERACTION
+#    KEYBOARD ACTIONS & TELEMETRY DISPATCH
 #    ======================================================== */
-# const raycaster = new THREE.Raycaster();
-# const kbMouse = new THREE.Vector2(-999, -999);
-# let hoveredKey = null;
-
 # const chipLabel = document.getElementById('kb-chip-label');
 # const inspName = document.getElementById('insp-name');
-# const inspStat = document.getElementById('insp-stat');
+# const inspCategory = document.getElementById('insp-category');
 # const inspDesc = document.getElementById('insp-desc');
-# const inspFill = document.getElementById('insp-fill');
+# const inspM1 = document.getElementById('insp-m1');
+# const inspM2 = document.getElementById('insp-m2');
+# const inspM3 = document.getElementById('insp-m3');
+# const inspLogs = document.getElementById('insp-logs');
 # const inspectorPanel = document.getElementById('skill-inspector');
 
-# function triggerKeyAction(keyGroup) {
+# function triggerKeyAction(keyGroup, isSequential = false) {
 #   if (!keyGroup) return;
 #   const k = keyGroup.userData.data;
-  
-#   // Audio click sound
-#   playMechanicalClick(950, 0.05);
 
-#   // Update Telemetry Panel
+#   playMechanicalClick(650, false);
+#   setTimeout(() => playMechanicalClick(450, true), 80);
+
 #   chipLabel.textContent = `${k.label} (ACTIVE)`;
-#   inspName.textContent = k.label;
-#   inspStat.textContent = `${k.level} PROFICIENCY`;
+#   inspName.innerHTML = `<span>${k.label}</span>`;
+#   inspCategory.textContent = k.category;
+#   inspCategory.style.color = k.color;
+#   inspCategory.style.borderColor = k.color;
 #   inspDesc.textContent = k.desc;
-#   const numericVal = parseInt(k.level) || 95;
-#   inspFill.style.width = numericVal + '%';
+#   inspM1.textContent = k.m1;
+#   inspM2.textContent = k.m2;
+#   inspM3.textContent = k.m3;
+
+#   inspLogs.innerHTML = k.logs.map(line => {
+#     return `<div><span class="log-time">[${new Date().toISOString().substring(14, 23)}]</span> ${line}</div>`;
+#   }).join('');
 
 #   inspectorPanel.classList.add('active-glow');
 #   setTimeout(() => inspectorPanel.classList.remove('active-glow'), 400);
 
-#   // Animate Keycap Switch Press Down & Bounce Up
 #   gsap.killTweensOf(keyGroup.position);
 #   gsap.to(keyGroup.position, {
 #     y: keyGroup.userData.depressedY,
-#     duration: 0.06,
+#     duration: 0.07,
 #     yoyo: true,
 #     repeat: 1,
 #     ease: "power2.inOut",
-#     onComplete: () => {
-#       keyGroup.position.y = 0;
-#     }
+#     onComplete: () => { keyGroup.position.y = 0; }
 #   });
 
-#   // Flash Underglow
-#   keyGroup.userData.glowMesh.material.color.setHex(0x4ade80);
-#   setTimeout(() => keyGroup.userData.glowMesh.material.color.setHex(0x38bdf8), 350);
+#   keyGroup.userData.glowMesh.material.opacity = 1.0;
+#   gsap.to(keyGroup.userData.glowMesh.material, { opacity: 0.4, duration: 0.45 });
 # }
+
+# // Pipeline Cascade Trigger
+# const pipelineBtn = document.getElementById('kb-run-pipeline');
+# let isPipelineRunning = false;
+
+# if (pipelineBtn) {
+#   pipelineBtn.addEventListener('click', () => {
+#     if (isPipelineRunning) return;
+#     isPipelineRunning = true;
+#     pipelineBtn.textContent = '⚡ RUNNING...';
+
+#     const pipelineIndices = [0, 1, 2, 3, 6, 9];
+#     pipelineIndices.forEach((keyIdx, i) => {
+#       setTimeout(() => {
+#         triggerKeyAction(keycapMeshes[keyIdx], true);
+#         if (i === pipelineIndices.length - 1) {
+#           setTimeout(() => {
+#             pipelineBtn.textContent = '⚡ RUN PIPELINE';
+#             isPipelineRunning = false;
+#           }, 500);
+#         }
+#       }, i * 280);
+#     });
+#   });
+# }
+
+# /* ========================================================
+#    MOUSE DRAGGING & RAYCASTING
+#    ======================================================== */
+# const raycaster = new THREE.Raycaster();
+# const kbMouse = new THREE.Vector2(-999, -999);
+# let hoveredKey = null;
+# let isDragging = false;
+# let prevMouseX = 0, prevMouseY = 0;
+# let targetRotY = 0, targetRotX = 0.26;
+
+# kbViewport.addEventListener('mousedown', (e) => {
+#   isDragging = true;
+#   prevMouseX = e.clientX;
+#   prevMouseY = e.clientY;
+# });
+
+# window.addEventListener('mouseup', () => { isDragging = false; });
 
 # kbViewport.addEventListener('mousemove', (e) => {
 #   const rect = kbViewport.getBoundingClientRect();
 #   kbMouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
 #   kbMouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+#   if (isDragging) {
+#     const deltaX = e.clientX - prevMouseX;
+#     const deltaY = e.clientY - prevMouseY;
+#     targetRotY += deltaX * 0.008;
+#     targetRotX = Math.max(0.1, Math.min(0.55, targetRotX + deltaY * 0.008));
+#     prevMouseX = e.clientX;
+#     prevMouseY = e.clientY;
+#   }
 # });
 
 # kbViewport.addEventListener('mouseleave', () => {
 #   kbMouse.x = -999; kbMouse.y = -999;
 #   if (hoveredKey) {
-#     hoveredKey.userData.glowMesh.material.opacity = 0.35;
+#     hoveredKey.userData.glowMesh.material.opacity = 0.4;
 #     hoveredKey = null;
 #   }
 # });
@@ -2261,19 +2535,21 @@ components.html(PORTFOLIO, height=3300, scrolling=False)
 #   if (intersects.length > 0) {
 #     const hitGroup = intersects[0].object.parentGroup;
 #     if (hitGroup && hitGroup !== hoveredKey) {
-#       if (hoveredKey) hoveredKey.userData.glowMesh.material.opacity = 0.35;
+#       if (hoveredKey) hoveredKey.userData.glowMesh.material.opacity = 0.4;
 #       hoveredKey = hitGroup;
-#       hoveredKey.userData.glowMesh.material.opacity = 0.9;
-#       playMechanicalClick(1100, 0.02);
+#       hoveredKey.userData.glowMesh.material.opacity = 0.85;
+#       playMechanicalClick(750, true);
 #     }
 #   } else if (hoveredKey) {
-#     hoveredKey.userData.glowMesh.material.opacity = 0.35;
+#     hoveredKey.userData.glowMesh.material.opacity = 0.4;
 #     hoveredKey = null;
 #   }
 
-#   // Gentle idle oscillation of keyboard
-#   kbChassis.rotation.y = tx * 0.15;
-#   kbChassis.rotation.x = 0.22 - ty * 0.1;
+#   if (!isDragging) {
+#     targetRotY += (0 - targetRotY) * 0.05;
+#   }
+#   kbChassis.rotation.y += (targetRotY - kbChassis.rotation.y) * 0.1;
+#   kbChassis.rotation.x += (targetRotX - kbChassis.rotation.x) * 0.1;
 #   kbRen.render(kbScene, kbCam);
 # }
 # animate();
@@ -2354,6 +2630,10 @@ components.html(PORTFOLIO, height=3300, scrolling=False)
 # """
 
 # components.html(PORTFOLIO, height=3300, scrolling=False)
+
+
+
+
 
 
 
